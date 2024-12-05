@@ -59,29 +59,56 @@ function resetProductModals() {
     // Resetear el formulario de eliminar producto
     document.getElementById('deleteProductForm').reset();
     
-    editingProductCode = null;  // Limpiar la variable de código
+    // Ocultar todas las pestañas
+    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+    
+    // Mostrar solo la pestaña de agregar (si es necesario)
+    document.getElementById('addTab').style.display = 'block';
 }
 
 
+// Función para mostrar la gestión de productos
 function showProductManagement() {
+    stopMenuBackground(); // Detener el fondo dinámico
     document.getElementById('mainMenu').style.display = 'none';
     document.getElementById('appContent').style.display = 'block';
     loadProducts(); // Cargar productos
 }
 
+
 function generateReport() {
+    stopMenuBackground(); // Detener el fondo dinámico
     const pdfContainer = document.getElementById('pdfContainer');
     const pdfViewer = document.getElementById('pdfViewer');
 
-    // Mostrar el contenedor del PDF
     pdfContainer.style.display = 'block';
-
-    // Cargar el PDF generado en tiempo real
     pdfViewer.src = 'http://localhost:5000/productos/reporte';
-
-    // Ocultar el menú una vez seleccionado
     document.getElementById('mainMenu').style.display = 'none';
 }
+
+// Mostrar el modal de filtros
+function showFilterModal() {
+    document.getElementById('filterModal').style.display = 'block';
+}
+
+// Cerrar el modal de filtros
+function closeFilterModal() {
+    document.getElementById('filterModal').style.display = 'none';
+}
+
+// Aplicar los filtros y actualizar el PDF
+function applyFilters() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const query = new URLSearchParams(formData).toString();
+    const pdfViewer = document.getElementById('pdfViewer');
+
+    // Actualizar la URL del iframe con los filtros
+    pdfViewer.src = `http://localhost:5000/productos/reporte?${query}`;
+
+    // Cerrar el modal después de aplicar los filtros
+    closeFilterModal();
+}
+
 
 function logout() {
     localStorage.removeItem('token');
@@ -92,12 +119,20 @@ function returnToMenu() {
     document.getElementById('mainMenu').style.display = 'block';
     document.getElementById('appContent').style.display = 'none';
     document.getElementById('pdfContainer').style.display = 'none';
+    startMenuBackground(); // Reiniciar el fondo dinámico
 }
 
 function openProductModal() {
     editingProductCode = null;  // Restablecer la variable para agregar un nuevo producto
     productModal.style.display = 'block';
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        startMenuBackground();
+    }
+});
 
 
 function openEditProductModal() {
@@ -153,7 +188,26 @@ async function loadProducts(page = 1) {
                 <td>${product.precio_unitario}</td>
                 <td>${product.categoria}</td>
                 <td><img src="${product.imagen}" width="50"></td>
+                <td>
+                    <img 
+                        src="/static/images/edit_icon.png" 
+                        alt="Editar" 
+                        title="Editar" 
+                        style="cursor: pointer; width: 27px; margin-right: 10px;"
+                        onclick="editProduct(${product.codigo})"
+                    >
+                    <img 
+                        src="/static/images/borrar_icon.png" 
+                        alt="Borrar" 
+                        title="Borrar" 
+                        style="cursor: pointer; width: 24px;"
+                        onclick="deleteProduct(${product.codigo})"
+                    >
+                </td>
             `;
+            if (product.stock <= 10) {
+                row.style.backgroundColor = '#ffcccc'; // Resaltar filas con bajo stock
+            }
             productList.appendChild(row);
         });
 
@@ -223,6 +277,8 @@ async function loadProductForEditing() {
     }
 }
 
+
+
 document.getElementById('editProductForm').addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -235,27 +291,22 @@ document.getElementById('editProductForm').addEventListener('submit', async (eve
         imagen: document.getElementById('editImage').value
     };
 
-    if (!editingProductCode) {
-        alert('No se ha seleccionado un producto para editar.');
-        return;
-    }
-
     try {
-        const response = await fetch(`http://localhost:5000/productos/${editingProductCode}`, {
+        const response = await fetch(`http://localhost:5000/productos/${document.getElementById('editProductCode').value}`, {
             method: 'PUT',
             body: JSON.stringify(productData),
             headers: { 'Content-Type': 'application/json' }
         });
 
-        if (response.ok) {
-            loadProducts(currentPage);
-            closeModal();
-            resetProductModals(); // Limpiar los campos de los modales
-        } else {
-            throw new Error('Error al actualizar el producto');
+        if (!response.ok) {
+            throw new Error('Error al guardar los cambios');
         }
+
+        loadProducts(currentPage); // Recargar la lista de productos
+        closeModal(); // Cerrar el modal de edición
+        resetProductModals();
     } catch (error) {
-        console.error('Error al actualizar el producto:', error);
+        alert(error.message);
     }
 });
 
@@ -276,6 +327,48 @@ async function deleteProductByCode(codigo) {
     }
 }
 
+
+let menuBackgroundInterval = null;
+const menuBackground = document.createElement('div');
+menuBackground.classList.add('menu-background');
+document.body.appendChild(menuBackground);
+
+// Ruta de las imágenes
+const images1 = [
+    '/static/images/imagenmenu1.avif',
+    '/static/images/imagenmenu2.avif',
+    '/static/images/imagenmenu3.avif',
+    '/static/images/imagenmenu4.avif',
+    '/static/images/imagenmenu5.avif',
+    '/static/images/imagenmenu7.avif',
+    '/static/images/imagenmenu8.avif',
+    '/static/images/imagenmenu9.avif',
+    '/static/images/imagenmenu10.avif'
+];
+let currentImageIndex = 0;
+
+// Función para iniciar el fondo dinámico
+function startMenuBackground() {
+    menuBackground.style.display = 'block'; // Mostrar el fondo dinámico
+    currentImageIndex = 0; // Reiniciar el índice
+
+    // Mostrar inmediatamente la primera imagen
+    menuBackground.style.backgroundImage = `url(${images1[currentImageIndex]})`;
+
+    // Cambiar las imágenes cada 2 segundos
+    menuBackgroundInterval = setInterval(() => {
+        currentImageIndex = (currentImageIndex + 1) % images1.length; // Ciclo infinito
+        menuBackground.style.backgroundImage = `url(${images1[currentImageIndex]})`;
+    }, 3000);
+}
+
+// Función para detener el fondo dinámico
+function stopMenuBackground() {
+    clearInterval(menuBackgroundInterval); // Detener el cambio de imágenes
+    menuBackground.style.backgroundImage = ''; // Restablecer fondo
+    menuBackground.style.display = 'none'; // Ocultar el fondo dinámico
+    document.body.style.backgroundColor = '#f1f1f1'; // Fondo blanco mármol
+}
 
 // Enviar formulario para eliminar producto
 document.getElementById('deleteProductForm').addEventListener('submit', async (event) => {
@@ -331,3 +424,54 @@ productForm.addEventListener('submit', async (event) => {
 
 // Inicializar la carga de productos al cargar la página
 loadProducts();
+
+function editProduct(productCode) {
+    // Mostrar solo el modal de edición
+    productModal.style.display = 'block';
+
+    // Asegurarse de que solo el formulario de edición esté visible
+    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+    document.getElementById('editTab').style.display = 'block';
+
+    // Cargar automáticamente los datos del producto seleccionado
+    fetch(`http://localhost:5000/productos/${productCode}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('No se pudo cargar el producto');
+            }
+            return response.json();
+        })
+        .then(product => {
+            document.getElementById('editProductCode').value = product.codigo;
+            document.getElementById('editName').value = product.producto;
+            document.getElementById('editDescription').value = product.descripcion;
+            document.getElementById('editQuantity').value = product.stock;
+            document.getElementById('editPrice').value = product.precio_unitario;
+            document.getElementById('editCategory').value = product.categoria;
+            document.getElementById('editImage').value = product.imagen;
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+}
+
+
+// Función para eliminar un producto específico
+function deleteProduct(productCode) {
+    const confirmation = confirm('¿Estás seguro de que deseas eliminar este producto?');
+    if (confirmation) {
+        fetch(`http://localhost:5000/productos/${productCode}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('No se pudo eliminar el producto');
+            }
+            alert('Producto eliminado exitosamente');
+            loadProducts(currentPage); // Recargar la lista de productos
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+    }
+}

@@ -17,15 +17,38 @@
             <h2>Menú Principal</h2>
             <button onclick="showProductManagement()">Gestión de Productos</button>
             <button onclick="generateReport()">Generar Reporte</button>
-            <button onclick="logout()">Cerrar Sesión</button>
+            <button class="menu-container1 button" onclick="logout()">Cerrar Sesión</button>
         </div>
     </div>
     
 
     <div id="pdfContainer" style="display: none; margin: 20px auto; width: 80%; height: 500px; border: 1px solid black;">
         <button onclick="returnToMenu()">Volver al Menú</button>
+        <button id="filterButton" onclick="showFilterModal()">Filtros</button> <!-- Botón de filtros -->
         <iframe id="pdfViewer" style="width: 100%; height: 100%;" frameborder="0"></iframe>
     </div>
+    
+    <!-- Modal de Filtros -->
+    <div id="filterModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; text-align: center;">
+        <div style="background: white; margin-top: 50px; padding: 20px; width: 400px; display: inline-block;">
+            <h3>Filtros para Reporte</h3>
+            <form id="filterForm">
+                <label for="codigo">Código:</label>
+                <input type="text" id="codigo" name="codigo">
+                <label for="producto">Producto:</label>
+                <input type="text" id="producto" name="producto">
+                <label for="categoria">Categoría:</label>
+                <input type="text" id="categoria" name="categoria">
+                <label for="stockMin">Stock mínimo:</label>
+                <input type="number" id="stockMin" name="stockMin">
+                <label for="stockMax">Stock máximo:</label>
+                <input type="number" id="stockMax" name="stockMax">
+                <button type="button" onclick="applyFilters()">Aplicar Filtros</button>
+                <button type="button" onclick="closeFilterModal()">Cerrar</button>
+            </form>
+        </div>
+    </div>
+    
     
     
 
@@ -47,11 +70,11 @@
         <button onclick="returnToMenu()">Volver al Menú</button>
         <div class="container">
             <h1 style="font-family: monospace; font-size: 35px;">Lista de Productos</h1>
-            <div style="margin-bottom: 20px;">
-                <button id="addProductButton" onclick="openProductModal()">Gestionar Productos</button>
+            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <button id="addProductButton" onclick="openProductModal()" style="font-size: 18px;">Agregar Producto</button>
 
                 <!-- Botón de Cerrar Sesión -->
-                <button id="logoutButton">Cerrar Sesión</button>
+                <button id="logoutButton" style="background-color: #f44336; color: white;">Cerrar Sesión</button>
             </div>
     
             <table id="productTable" border="1">
@@ -64,6 +87,7 @@
                         <th>Precio</th>
                         <th>Categoría</th>
                         <th>Imagen</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="productList">
@@ -126,7 +150,21 @@
     
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.2.8/pdfobject.min.js"></script>
-
+    <script>
+        const images = [
+            "{{ url_for('static', filename='images/imagenmenu1.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu2.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu3.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu4.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu5.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu6.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu7.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu8.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu9.avif') }}",
+            "{{ url_for('static', filename='images/imagenmenu10.avif') }}",
+        ];
+        </script>
+        
     <script src="/js/inicio.js"></script>
 </body>
 </html>

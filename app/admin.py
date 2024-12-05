@@ -50,12 +50,38 @@ def validate_fields(data, required_fields):
 
 
 
-
 @app.route('/productos/reporte', methods=['GET'])
 def generate_pdf_report():
     try:
+        # Obtener los parámetros de filtro de la URL
+        codigo = request.args.get('codigo', default=None)  # Si no se especifica, toma None
+        producto = request.args.get('producto', default=None)
+        categoria = request.args.get('categoria', default=None)
+        stock_min = request.args.get('stockMin', type=int, default=None)
+        stock_max = request.args.get('stockMax', type=int, default=None)
+
+        # Si los parámetros son vacíos, asignar valores predeterminados para que no afecten la consulta
+        if not codigo:
+            codigo = '%'
+        if not producto:
+            producto = '%'
+        if not categoria:
+            categoria = '%'
+        if stock_min is None:
+            stock_min = 0
+        if stock_max is None:
+            stock_max = 999999
+
+        # Construir la consulta SQL con filtros, asegurando que solo se apliquen si tienen valores
+        query = """
+            SELECT * FROM productos 
+            WHERE (%s = '%%' OR codigo LIKE %s) 
+            AND (%s = '%%' OR producto LIKE %s)
+            AND (%s = '%%' OR categoria LIKE %s)
+            AND stock BETWEEN %s AND %s
+        """
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT * FROM productos")
+        cursor.execute(query, (codigo, codigo, producto, producto, categoria, categoria, stock_min, stock_max))
         products = cursor.fetchall()
 
         # Crear un archivo PDF en memoria
@@ -65,7 +91,7 @@ def generate_pdf_report():
 
         # Título del reporte
         c.setFont("Times-Bold", 20)  # Times New Roman en negrita para el título
-        c.drawString(200, height - 40, "Reporte de Productos Actuales")
+        c.drawString(200, height - 40, "Reporte de Productos Filtrados")
         c.setFont("Times-Roman", 10)  # Times New Roman para texto normal
 
         # Encabezados de tabla
@@ -137,11 +163,10 @@ def generate_pdf_report():
         pdf_buffer.seek(0)
 
         # Enviar el PDF como respuesta
-        return Response(pdf_buffer, mimetype='application/pdf', headers={'Content-Disposition': 'inline; filename="reporte_productos.pdf"'})
+        return Response(pdf_buffer, mimetype='application/pdf', headers={'Content-Disposition': 'inline; filename="reporte_productos_filtrados.pdf"'})
 
     except Exception as e:
         return jsonify({'error': 'Error al generar el PDF', 'details': str(e)}), 500
-
 
 
 
