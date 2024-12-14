@@ -9,6 +9,7 @@ body {
     color: #333;
 }
 
+
 .container {
     max-width: 900px;
     margin: 30px auto;
@@ -29,7 +30,7 @@ h1 {
     font-size: 24px;
 }
 
-/* Tabla de Productos */
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -38,7 +39,7 @@ table {
 th, td {
     padding: 15px;
     text-align: left;
-    border-bottom: 1px solid #ddd; /* Línea sutil en celdas */
+    border-bottom: 1px solid #ddd;
 }
 
 th {
@@ -47,13 +48,13 @@ th {
     font-weight: bold;
 }
 
-/* Estilo de los botones dentro de la aplicación */
+
 button {
     font-family: monospace;
     font-size: 14px;
     padding: 10px 20px;
     border: 1px solid #000;
-    background-color: #D0CAC6; /* Timberwolf */
+    background-color: #D0CAC6;
     color: #000;
     cursor: pointer;
     font-size: 16px;
@@ -65,12 +66,12 @@ button:disabled {
 }
 
 button:hover {
-    background-color: #A29F96; /* Un tono más oscuro para el hover */
+    background-color: #A29F96;
     color: #fff;
 }
 
 
-/* Modal */
+
 #productModal {
     display: none;
     position: fixed;
@@ -84,12 +85,14 @@ button:hover {
     z-index: 999;
 }
 
+
 #productForm {
     background-color: #fff;
     padding: 20px;
     border: 2px solid #000;
     width: 300px;
 }
+
 
 input[type="text"],
 input[type="number"] {
@@ -153,7 +156,8 @@ td img {
     right: 40px;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(208, 202, 198, 0.5);
+    
     z-index: 1000;
 }
 
@@ -170,6 +174,7 @@ td img {
     top: 50%;
     right: 40px;
     transform: translateY(-50%);
+    border-radius: 6px;
 }
 
 
@@ -232,8 +237,8 @@ td img {
     padding: 30px;
     background: linear-gradient(145deg, #ffffff, #e6e6e6); /* Fondo degradado claro */
     color: #000;
-    border: 1px solid #ccc;
-    border-radius: 1px; /* Bordes redondeados */
+    border: 1px solid #D0CAC6;
+    border-radius: 12px; /* Bordes redondeados */
     box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2); /* Sombra */
     width: 320px;
     animation: fadeIn 0.8s ease-in-out; /* Animación de entrada */
@@ -242,7 +247,7 @@ td img {
 /* Botones del Menú */
 .menu-container button {
     background-color: #4CAF50;
-    color: white;
+    color: #D0CAC6;
     border: none;
     padding: 15px 30px;
     margin: 15px 0;
@@ -251,7 +256,13 @@ td img {
     border-radius: 10px; /* Bordes redondeados */
     transition: transform 0.2s, background-color 0.3s; /* Transiciones suaves */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 200px; /* Ancho fijo para todos los botones */
+    text-align: center; /* Asegura que el texto esté centrado */
 }
+
+
+
+
 
 .menu-container button:hover {
     background-color: #45a049;
@@ -265,6 +276,8 @@ td img {
 
 /* Fondo del contenedor */
 .menu-background {
+
+    color: #D0CAC6;
     position: fixed;
     top: 0;
     left: 0;
@@ -461,11 +474,11 @@ button[type="submit"]:hover, button[type="button"]:hover {
 }
 
 #imageButton:hover {
-    transform: scale(1.1); /* Ampliar ligeramente al pasar el mouse */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Añadir sombra */
+    transform: scale(1.1); 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
 }
 
 #imageButton:active {
     transform: scale(0.95); /* Reducir tamaño al hacer clic */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Reducir sombra */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
 }

@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('token', 'active');
                 loginModal.style.display = 'none';
                 mainMenu.style.display = 'block';
+                startMenuBackground();
             } else {
                 throw new Error('Credenciales incorrectas');
             }
@@ -49,25 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function resetProductModals() {
-    // Resetear el formulario de agregar producto
+
     document.getElementById('productForm').reset();
     
-    // Resetear el formulario de editar producto
     document.getElementById('editProductForm').reset();
-    document.getElementById('editProductCode').readOnly = false; // Habilitar la edición del código
+    document.getElementById('editProductCode').readOnly = false;
     
-    // Resetear el formulario de eliminar producto
+
     document.getElementById('deleteProductForm').reset();
     
-    // Ocultar todas las pestañas
+
     document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
     
-    // Mostrar solo la pestaña de agregar (si es necesario)
     document.getElementById('addTab').style.display = 'block';
 }
 
 
-// Función para mostrar la gestión de productos
 function showProductManagement() {
     stopMenuBackground(); // Detener el fondo dinámico
     document.getElementById('mainMenu').style.display = 'none';
