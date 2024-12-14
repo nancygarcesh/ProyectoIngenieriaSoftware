@@ -132,7 +132,7 @@ document.getElementById('logoutButton').addEventListener('click', () => {
     location.reload();
 });
 
-// Cargar productos
+// Actualizar la carga de productos para reflejar los nuevos datos
 async function loadProducts(page = 1) {
     try {
         const response = await fetch(`http://localhost:5000/productos?page=${page}&limit=8`);
@@ -147,7 +147,7 @@ async function loadProducts(page = 1) {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${product.codigo}</td>
-                <td>${product.producto}</td>
+                <td>${product.nombre}</td>
                 <td>${product.descripcion}</td>
                 <td>${product.stock}</td>
                 <td>${product.precio_unitario}</td>
@@ -160,9 +160,10 @@ async function loadProducts(page = 1) {
         updatePagination(data.total_pages, page);
     } catch (error) {
         console.error('Error:', error);
-        alert(error.message); // Mostrar un mensaje amigable al usuario
+        alert(error.message);
     }
 }
+
 
 
 // Actualizar paginación
@@ -191,29 +192,24 @@ function closeEditProductModal() {
     editingProductCode = null; // Limpiar la variable de código
 }
 
-// Función para cargar los detalles del producto cuando se ingresa el código
 // Cargar los detalles del producto para editar
 async function loadProductForEditing() {
     const codigo = document.getElementById('editProductCode').value;
-    
+
     if (codigo) {
         try {
             const response = await fetch(`http://localhost:5000/productos/${codigo}`);
             if (!response.ok) throw new Error('Producto no encontrado');
-            
+
             const product = await response.json();
             // Rellenar el formulario con los datos del producto
-            document.getElementById('editName').value = product.producto;
+            document.getElementById('editName').value = product.nombre;
             document.getElementById('editDescription').value = product.descripcion;
-            document.getElementById('editQuantity').value = product.stock;
             document.getElementById('editPrice').value = product.precio_unitario;
             document.getElementById('editCategory').value = product.categoria;
             document.getElementById('editImage').value = product.imagen;
 
-            // Bloquea el campo de código después de cargar los datos
-            document.getElementById('editProductCode').readOnly = true;
-
-            editingProductCode = codigo; // Asegurarse de que se guarde el código
+            editingProductCode = codigo; // Guardar el código del producto en edición
         } catch (error) {
             console.error('Error al cargar el producto:', error);
             alert(error.message);
@@ -222,6 +218,7 @@ async function loadProductForEditing() {
         alert('Por favor, introduce un código.');
     }
 }
+
 
 document.getElementById('editProductForm').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -290,11 +287,11 @@ document.getElementById('deleteProductForm').addEventListener('submit', async (e
 // Enviar formulario para agregar/editar producto
 productForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+
     const productData = {
-        producto: document.getElementById('name').value,
+        nombre: document.getElementById('name').value,
         descripcion: document.getElementById('description').value,
-        stock: document.getElementById('quantity').value,
-        precio_unitario: document.getElementById('price').value,
+        precio_unitario: parseFloat(document.getElementById('price').value),
         categoria: document.getElementById('category').value,
         imagen: document.getElementById('image').value
     };
@@ -327,6 +324,69 @@ productForm.addEventListener('submit', async (event) => {
 });
 
 
+document.getElementById('detailProductForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const codigo = document.getElementById('detailProductCode').value;
+
+    if (!codigo) {
+        alert('Por favor, introduce un código.');
+        return;
+    }
+
+    try {
+        // Obtener datos del producto
+        const productResponse = await fetch(`http://localhost:5000/productos/${codigo}`);
+        if (!productResponse.ok) throw new Error('Producto no encontrado');
+
+        const product = await productResponse.json();
+
+        // Obtener lotes del producto
+        const lotesResponse = await fetch(`http://localhost:5000/productos/${codigo}/lotes`);
+        if (!lotesResponse.ok) throw new Error('No se encontraron lotes para este producto');
+
+        const lotesData = await lotesResponse.json();
+
+        // Renderizar información del producto y lotes
+        const detailContainer = document.getElementById('detailProductInfo');
+        detailContainer.innerHTML = `
+            <h2>Producto: ${product.nombre}</h2>
+            <p><strong>Descripción:</strong> ${product.descripcion}</p>
+            <p><strong>Categoría:</strong> ${product.categoria}</p>
+            <p><strong>Precio Unitario:</strong> ${product.precio_unitario}</p>
+            <p><strong>Stock Total:</strong> ${product.stock}</p>
+            <h3>Lotes:</h3>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Lote</th>
+                        <th>Fecha de Vencimiento</th>
+                        <th>Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${lotesData.lotes
+                        .map(
+                            lote => `
+                            <tr>
+                                <td>${lote.lote}</td>
+                                <td>${lote.fecha_vencimiento}</td>
+                                <td>${lote.stock}</td>
+                            </tr>
+                        `
+                        )
+                        .join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        alert(error.message);
+    }
+});
+
+function returnToProductManagement() {
+    document.getElementById('detailTab').style.display = 'none'; // Ocultar la sección de detalle
+    document.getElementById('productManagement').style.display = 'block'; // Mostrar la sección de gestión de productos
+}
 
 
 // Inicializar la carga de productos al cargar la página

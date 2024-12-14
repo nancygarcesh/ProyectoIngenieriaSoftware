@@ -10,8 +10,6 @@
 </head>
 <body>
 
-
-
     <div id="mainMenu" style="display: none;">
         <div class="menu-container">
             <h2>Menú Principal</h2>
@@ -41,7 +39,7 @@
         <p id="loginError" style="color: red; display: none;">Credenciales incorrectas</p>
     </div>
 
-        
+    
     
     <div id="appContent" style="display: none;">
         <button onclick="returnToMenu()">Volver al Menú</button>
@@ -72,14 +70,19 @@
             </table>
             <div id="pagination" style="text-align: center; margin-top: 20px;"></div>
         </div>
+        
+        
     
         <!-- Modal de opciones (Agregar, Editar, Eliminar) -->
         <div id="productModal" style="display: none;" class="modal">
+            <button class="close-button" onclick="closeModal()">x</button>
             <div class="modal-content">
                 <div class="tab-buttons">
                     <button class="tab-button" onclick="openTab('add')">Agregar Producto</button>
                     <button class="tab-button" onclick="openTab('edit')">Editar Producto</button>
                     <button class="tab-button" onclick="openTab('delete')">Eliminar Producto</button>
+                    <button class="tab-button" onclick="openTab('detail')">Detalle Producto</button>
+
                 </div>
     
                 <!-- Contenido de cada pestaña -->
@@ -120,6 +123,18 @@
                         <button class="closeModalButton1" type="button" onclick="closeModal()">Cancelar</button>
                     </form>
                 </div>
+                
+                <div id="detailTab" class="tab-content" style="display:none;">
+                    <button onclick="returnToProductManagement()">Volver</button>
+                    <form id="detailProductForm">
+                        <input type="number" id="detailProductCode" placeholder="Introduce el Código del Producto" required>
+                        <button type="submit">Cargar Detalle</button>
+                    </form>
+                    <div id="detailProductInfo" style="margin-top: 20px;">
+                        <!-- Información del producto cargada dinámicamente -->
+                    </div>
+                </div>
+                
             </div>
         </div>
     </div>

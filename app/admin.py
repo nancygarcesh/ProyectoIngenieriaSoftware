@@ -55,7 +55,10 @@ def validate_fields(data, required_fields):
 def generate_pdf_report():
     try:
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT * FROM productos")
+        cursor.execute("""
+            SELECT codigo_producto, nombre_producto, descripcion, stock_total, precio_unitario, categoria
+            FROM v_stock_productos
+        """)
         products = cursor.fetchall()
 
         # Crear un archivo PDF en memoria
@@ -86,9 +89,8 @@ def generate_pdf_report():
         y_start -= line_height
         c.setFont("Times-Roman", 10)  # Fuente normal para las filas
         for product in products:
-            # Intercambiar valores de "Código" y "Producto"
-            codigo = product[0]  # Antes "Producto"
-            producto = product[1]  # Antes "Código"
+            codigo = product[0]
+            nombre = product[1]
             descripcion = product[2]
             stock = product[3]
             precio = product[4]
@@ -101,7 +103,7 @@ def generate_pdf_report():
             ]
 
             # Generar las filas con los valores ajustados
-            valores = [producto, codigo, lineas_descripcion, stock, precio, categoria]
+            valores = [codigo, nombre, lineas_descripcion, stock, precio, categoria]
             for i, value in enumerate(valores):
                 if i == 2:  # Si es la columna "Descripción"
                     # Dibujar las líneas alineadas a la izquierda
@@ -149,23 +151,27 @@ def generate_pdf_report():
 def get_product(codigo):
     try:
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT * FROM productos WHERE codigo = %s", (codigo,))
+        cursor.execute(
+            """
+            SELECT codigo_producto, nombre_producto, descripcion, precio_unitario, categoria, imagen, stock_total
+            FROM v_stock_productos
+            WHERE codigo_producto = %s
+            """,
+            (codigo,)
+        )
         product = cursor.fetchone()
         if not product:
             return jsonify({'message': 'Producto no encontrado'}), 404
 
-        # Ajuste del mapeo según el orden de las columnas en la tabla
         return jsonify({
-            'producto': product[0],  # Nombre del producto
-            'codigo': product[1],  # Código del producto
-            'descripcion': product[2],  # Descripción
-            'stock': product[3],  # Stock
-            'precio_unitario': float(product[4]),  # Precio unitario
-            'categoria': product[5],  # Categoría
-            'imagen': product[6]  # URL de la imagen
+            'codigo': product[0],
+            'nombre': product[1],
+            'descripcion': product[2],
+            'precio_unitario': float(product[3]),
+            'categoria': product[4],
+            'imagen': product[5],
+            'stock': product[6]
         })
-    except DatabaseError as db_err:
-        return jsonify({'error': 'Error en la base de datos', 'details': str(db_err)}), 500
     except Exception as e:
         return jsonify({'error': 'Error interno', 'details': str(e)}), 500
 
@@ -178,11 +184,10 @@ def get_products():
         offset = (page - 1) * limit
 
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT COUNT(*) FROM productos")
+        cursor.execute("SELECT COUNT(*) FROM v_stock_productos")
         total_products = cursor.fetchone()[0]
 
-        # Verificar si la página solicitada es válida
-        total_pages = -(-total_products // limit)  # Cálculo del techo
+        total_pages = -(-total_products // limit)
         if page > total_pages or page < 1:
             return jsonify({
                 'error': 'Página no válida',
@@ -190,27 +195,64 @@ def get_products():
                 'current_page': page
             }), 400
 
-        # Obtener los productos de la página solicitada
-        cursor.execute("SELECT * FROM productos LIMIT %s OFFSET %s", (limit, offset))
+        cursor.execute(
+            """
+            SELECT codigo_producto, nombre_producto, descripcion, precio_unitario, categoria, imagen, stock_total
+            FROM v_stock_productos
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset)
+        )
         products = cursor.fetchall()
 
         return jsonify({
-            'products': [{
-                'codigo': row[1],
-                'producto': row[0],
-                'descripcion': row[2],
-                'stock': row[3],
-                'precio_unitario': float(row[4]),
-                'categoria': row[5],
-                'imagen': row[6]
-            } for row in products],
+            'products': [
+                {
+                    'codigo': row[0],
+                    'nombre': row[1],
+                    'descripcion': row[2],
+                    'precio_unitario': float(row[3]),
+                    'categoria': row[4],
+                    'imagen': row[5],
+                    'stock': row[6]
+                } for row in products
+            ],
             'total_pages': total_pages,
             'current_page': page
         })
-    except DatabaseError as db_err:
-        return jsonify({'error': 'Error en la base de datos', 'details': str(db_err)}), 500
     except Exception as e:
         return jsonify({'error': 'Error interno', 'details': str(e)}), 500
+    
+
+@app.route('/productos/<int:codigo>/lotes', methods=['GET'])
+def get_product_lotes(codigo):
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            """
+            SELECT lote, fecha_vencimiento, stock_lote, precio_unitario, categoria
+            FROM v_stock_lotes
+            WHERE codigo_producto = %s
+            """,
+            (codigo,)
+        )
+        lotes = cursor.fetchall()
+        if not lotes:
+            return jsonify({'message': 'No se encontraron lotes para este producto'}), 404
+
+        return jsonify({
+            'lotes': [
+                {
+                    'lote': row[0],
+                    'fecha_vencimiento': row[1].strftime('%Y-%m-%d'),
+                    'stock': row[2],
+                    'precio_unitario': float(row[3]),
+                    'categoria': row[4]
+                } for row in lotes
+            ]
+        })
+    except Exception as e:
+        return jsonify({'error': 'Error interno', 'details': str(e)}), 500    
 
 
 
@@ -218,28 +260,20 @@ def get_products():
 def add_product():
     try:
         data = request.json
-        print("Datos recibidos para agregar el producto:", data)  # Log para verificar los datos recibidos
-
-        required_fields = ['producto', 'descripcion', 'stock', 'precio_unitario', 'categoria', 'imagen']
-        valid, missing_fields = validate_fields(data, required_fields)
-
-        if not valid:
+        required_fields = ['nombre', 'descripcion', 'categoria', 'precio_unitario', 'imagen']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
             return jsonify({'error': 'Faltan campos requeridos', 'missing_fields': missing_fields}), 400
 
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT MAX(codigo) FROM productos")
-        result = cursor.fetchone()
-        next_code = (result[0] or 0) + 1
 
         cursor.execute(
-            "INSERT INTO productos (codigo, producto, descripcion, stock, precio_unitario, categoria, imagen) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (next_code, data['producto'], data['descripcion'], data['stock'], data['precio_unitario'], data['categoria'], data['imagen'])
+            "INSERT INTO productos (nombre, descripcion, categoria, precio_unitario, imagen) VALUES (%s, %s, %s, %s, %s)",
+            (data['nombre'], data['descripcion'], data['categoria'], data['precio_unitario'], data['imagen'])
         )
         mysql.connection.commit()
-        return jsonify({'message': 'Producto agregado', 'codigo': next_code}), 201
-    except DatabaseError as db_err:
-        return jsonify({'error': 'Error en la base de datos', 'details': str(db_err)}), 500
+
+        return jsonify({'message': 'Producto agregado', 'codigo': cursor.lastrowid}), 201
     except Exception as e:
         return jsonify({'error': 'Error interno', 'details': str(e)}), 500
 
@@ -249,41 +283,23 @@ def add_product():
 @app.route('/productos/<int:codigo>', methods=['PUT'])
 def update_product(codigo):
     try:
-        # Obtén los datos enviados desde el frontend
         data = request.json
-        print("Datos recibidos para actualizar:", data)  # Log para verificar los datos recibidos
+        allowed_fields = ['nombre', 'descripcion', 'categoria', 'precio_unitario', 'imagen']
+        updates = {field: data[field] for field in allowed_fields if field in data}
 
-        # Verificación de los campos requeridos
-        required_fields = ['producto', 'descripcion', 'stock', 'precio_unitario', 'categoria', 'imagen']
-        valid, missing_fields = validate_fields(data, required_fields)
+        if not updates:
+            return jsonify({'error': 'No hay campos válidos para actualizar'}), 400
 
-        if not valid:
-            return jsonify({'error': 'Faltan campos requeridos', 'missing_fields': missing_fields}), 400
+        set_clause = ", ".join([f"{field} = %s" for field in updates.keys()])
+        values = list(updates.values()) + [codigo]
 
-        # Verifica si el producto existe en la base de datos
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT * FROM productos WHERE codigo = %s", (codigo,))
-        product = cursor.fetchone()
-
-        if not product:
-            return jsonify({'error': 'Producto no encontrado'}), 404
-
-        # Realiza la actualización en la base de datos
-        cursor.execute(
-            "UPDATE productos SET producto = %s, descripcion = %s, stock = %s, precio_unitario = %s, categoria = %s, imagen = %s WHERE codigo = %s",
-            (data['producto'], data['descripcion'], data['stock'], data['precio_unitario'], data['categoria'], data['imagen'], codigo)
-        )
+        cursor.execute(f"UPDATE productos SET {set_clause} WHERE codigo = %s", values)
         mysql.connection.commit()
 
-        # Respuesta de éxito
-        return jsonify({'message': 'Producto actualizado exitosamente'}), 200
-
-    except DatabaseError as db_err:
-        return jsonify({'error': 'Error en la base de datos', 'details': str(db_err)}), 500
+        return jsonify({'message': 'Producto actualizado correctamente'}), 200
     except Exception as e:
         return jsonify({'error': 'Error interno', 'details': str(e)}), 500
-
-
 
 
 
